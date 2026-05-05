@@ -1,36 +1,15 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Quote, Star } from "lucide-react"
-
-const TESTIMONIALS = [
-  {
-    name: "Rohan M.",
-    country: "Now in Tokyo, Japan",
-    role: "SSW Hospitality Visa",
-    quote:
-      "The team handled my JLPT prep, employer matching, and visa filing seamlessly. I landed in Tokyo within 9 months of signing up.",
-    rating: 5,
-  },
-  {
-    name: "Priya S.",
-    country: "Now in Toronto, Canada",
-    role: "Express Entry PR",
-    quote:
-      "Honest, transparent, and always available. They guided my CRS profile to a 482 score and I got my ITA on the first draw.",
-    rating: 5,
-  },
-  {
-    name: "Arjun K.",
-    country: "Now in Berlin, Germany",
-    role: "EU Blue Card",
-    quote:
-      "From German A1 prep to landing my engineering role in Berlin, every step was professionally managed. Highly recommend.",
-    rating: 5,
-  },
-]
+import { Quote, Star, ArrowRight } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { customerReviews, getReviewInitials } from "@/lib/reviews-data"
 
 export function Testimonials() {
+  // Take first 6 reviews for the home page
+  const homeReviews = customerReviews.slice(0, 6)
+
   return (
     <section className="relative py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
@@ -40,14 +19,14 @@ export function Testimonials() {
             <span className="text-primary">Real outcomes.</span>
           </h2>
           <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground md:text-lg">
-            Hear from a few of the thousands who now live, study, and work abroad with us.
+            Hear from our successful candidates who now live and work abroad with us.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((t, idx) => (
+        <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+          {homeReviews.map((t, idx) => (
             <motion.figure
-              key={t.name}
+              key={t.id}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
@@ -58,26 +37,47 @@ export function Testimonials() {
                 aria-hidden="true"
                 className="absolute right-5 top-5 h-8 w-8 text-primary/20"
               />
-              <div className="flex gap-1" aria-label={`${t.rating} out of 5 stars`}>
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-4 w-4 fill-primary text-primary"
-                    aria-hidden="true"
-                  />
-                ))}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                  {getReviewInitials(t.name)}
+                </div>
+                <div>
+                  <div className="flex gap-0.5" aria-label={`${t.rating} out of 5 stars`}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3 w-3 ${i < t.rating ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <blockquote className="mt-4 grow text-pretty text-sm leading-relaxed text-foreground/90">
-                &ldquo;{t.quote}&rdquo;
+              <blockquote className="grow text-pretty text-sm leading-relaxed text-foreground/90 italic">
+                &ldquo;{t.text}&rdquo;
               </blockquote>
               <figcaption className="mt-6 border-t border-border/60 pt-4">
                 <p className="font-semibold text-foreground">{t.name}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {t.role} · {t.country}
+                  {t.visa} · {t.country}
                 </p>
               </figcaption>
             </motion.figure>
           ))}
+        </div>
+
+        <div className="mt-12 text-center">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="rounded-full border-primary/20 hover:bg-primary/5"
+          >
+            <Link href="/reviews" className="group">
+              View all 40+ reviews
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useRef, useState, useMemo, useCallback, Suspense, lazy } from "react"
+import { useRef, useState, useMemo, useCallback, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, Stars, Html, Text, Billboard } from "@react-three/drei"
+import { OrbitControls, Stars, Html, Billboard, useTexture } from "@react-three/drei"
 import * as THREE from "three"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -50,8 +50,8 @@ function Atmosphere() {
       fragmentShader: `
         varying vec3 vNormal;
         void main() {
-          float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
-          gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 1.5;
+          float intensity = pow(0.7 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
+          gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 2.0;
         }
       `,
       blending: THREE.AdditiveBlending,
@@ -72,90 +72,52 @@ function Atmosphere() {
 function Earth() {
   const meshRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
+  const cloudsRef = useRef<THREE.Mesh>(null)
+
+  // Load realistic textures
+  const [colorMap, bumpMap, specularMap] = useTexture([
+    "/earth-texture.jpg", // We use the existing one
+    "/earth-texture.jpg", // Using same for bump as fallback
+    "/earth-texture.jpg", // Using same for specular as fallback
+  ])
 
   // Auto-rotation
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * 0.05
     }
+    if (cloudsRef.current) {
+      cloudsRef.current.rotation.y += delta * 0.07
+    }
   })
-
-  // Earth texture using data URL approach - create a procedural earth-like texture
-  const earthTexture = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 1024
-    canvas.height = 512
-    const ctx = canvas.getContext("2d")!
-    
-    // Ocean base
-    ctx.fillStyle = "#1a3a5c"
-    ctx.fillRect(0, 0, 1024, 512)
-    
-    // Add landmasses (simplified procedural)
-    const landColor = "#2d5016"
-    ctx.fillStyle = landColor
-    
-    // Rough continents approximation
-    const continents = [
-      { x: 150, y: 120, w: 200, h: 180 }, // Americas
-      { x: 420, y: 100, w: 180, h: 140 }, // Europe
-      { x: 450, y: 200, w: 120, h: 180 }, // Africa
-      { x: 580, y: 80, w: 300, h: 200 },  // Asia
-      { x: 750, y: 280, w: 120, h: 100 }, // Australia
-    ]
-    
-    continents.forEach(c => {
-      ctx.beginPath()
-      ctx.ellipse(c.x, c.y, c.w / 2, c.h / 2, 0, 0, Math.PI * 2)
-      ctx.fill()
-    })
-    
-    // Add some noise/texture
-    for (let i = 0; i < 5000; i++) {
-      const x = Math.random() * 1024
-      const y = Math.random() * 512
-      const size = Math.random() * 3
-      ctx.fillStyle = Math.random() > 0.5 ? "#1e4d2b" : "#3a6b3a"
-      ctx.fillRect(x, y, size, size)
-    }
-    
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.ClampToEdgeWrapping
-    return texture
-  }, [])
-
-  const bumpMap = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 512
-    canvas.height = 256
-    const ctx = canvas.getContext("2d")!
-    ctx.fillStyle = "#808080"
-    ctx.fillRect(0, 0, 512, 256)
-    
-    for (let i = 0; i < 2000; i++) {
-      const x = Math.random() * 512
-      const y = Math.random() * 256
-      const gray = Math.floor(Math.random() * 100 + 100)
-      ctx.fillStyle = `rgb(${gray},${gray},${gray})`
-      ctx.fillRect(x, y, Math.random() * 4 + 1, Math.random() * 4 + 1)
-    }
-    
-    return new THREE.CanvasTexture(canvas)
-  }, [])
 
   return (
     <group ref={groupRef}>
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
-        <meshStandardMaterial
-          map={earthTexture}
+      {/* Main Earth Mesh */}
+      <mesh ref={meshRef} receiveShadow castShadow>
+        <sphereGeometry args={[EARTH_RADIUS, 128, 128]} />
+        <meshPhongMaterial
+          map={colorMap}
           bumpMap={bumpMap}
           bumpScale={0.05}
-          roughness={0.8}
-          metalness={0.1}
+          specularMap={specularMap}
+          specular={new THREE.Color("grey")}
+          shininess={5}
         />
       </mesh>
+
+      {/* Clouds Layer */}
+      <mesh ref={cloudsRef} scale={[1.01, 1.01, 1.01]}>
+        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
+        <meshPhongMaterial
+          map={colorMap} // Ideally a separate cloud texture, but we'll use transparency trick
+          transparent={true}
+          opacity={0.2}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
       <Atmosphere />
     </group>
   )
@@ -248,7 +210,7 @@ function ConnectionArcs({ markers }: { markers: CountryMarker[] }) {
 
   return (
     <>
-      {connections.map(([start, end], i) => {
+      {connections.map(([start, end]) => {
         const startPos = latLngToVector3(start.lat, start.lng, EARTH_RADIUS + 0.02)
         const endPos = latLngToVector3(end.lat, end.lng, EARTH_RADIUS + 0.02)
         const mid = startPos.clone().add(endPos).multiplyScalar(0.5)
@@ -259,14 +221,11 @@ function ConnectionArcs({ markers }: { markers: CountryMarker[] }) {
         const geometry = new THREE.BufferGeometry().setFromPoints(points)
         
         return (
-          <line key={`${start.id}-${end.id}`} geometry={geometry}>
-            <lineBasicMaterial
-              color="#ffdd44"
-              transparent
-              opacity={0.15}
-              linewidth={1}
-            />
-          </line>
+          <primitive key={`${start.id}-${end.id}`} object={new THREE.Line(geometry, new THREE.LineBasicMaterial({
+            color: "#ffdd44",
+            transparent: true,
+            opacity: 0.15,
+          }))} />
         )
       })}
     </>
@@ -290,10 +249,17 @@ function Scene({
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[5, 3, 5]} intensity={1.5} color="#ffffff" />
-      <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#4455aa" />
-      <pointLight position={[10, 10, 10]} intensity={0.5} color="#ffddaa" />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[5, 3, 5]} intensity={2.5} color="#ffffff" castShadow />
+      <directionalLight position={[-5, -3, -5]} intensity={0.5} color="#4455aa" />
+      <pointLight position={[10, 10, 10]} intensity={1.0} color="#ffddaa" />
+      <spotLight
+        position={[10, 10, 10]}
+        angle={0.15}
+        penumbra={1}
+        intensity={2}
+        castShadow
+      />
       
       {/* Stars */}
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0.5} fade speed={1} />

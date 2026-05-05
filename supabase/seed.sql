@@ -110,7 +110,7 @@ INSERT INTO countries (code, name, slug, capital, region, subregion, latitude, l
 '{"success_rate": 96.0, "avg_processing_days": 30, "popular_sectors": ["IT", "Healthcare", "Engineering", "Finance", "Education"]}',
 9,
 'India Best Visa Consultants | Work & Study Abroad | Siddhivinayak Overseas',
-'Indias trusted visa consultancy for work and study visas to Japan, Australia, Canada, UK, Germany, New Zealand, Russia, and USA.',
+'Indias trusted visa consultancy for work and study visas to Japan, Australia, Canada, UK, Germany, New Zealand, Russia, and USA.'),
 
 ('ARE', 'United Arab Emirates', 'united-arab-emirates', 'Abu Dhabi', 'Asia', 'Western Asia', 23.4241, 53.8478, 'UAE Dirham', 'AED', 'Arabic, English', '🇦🇪',
 'The UAE offers tax-free salaries, modern infrastructure, and a cosmopolitan lifestyle. The Golden Visa provides long-term residency for skilled professionals.',

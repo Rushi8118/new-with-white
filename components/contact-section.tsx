@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-react"
+import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,6 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import PhoneInput from 'react-phone-number-input'
+import 'react-phone-number-input/style.css'
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
+import { getCountries, getCountryCallingCode } from 'react-phone-number-input/input'
+import en from 'react-phone-number-input/locale/en'
 
 const WORK_COUNTRIES = [
   "Japan",
@@ -55,15 +63,137 @@ const WORK_CATEGORIES = [
 type FormState = "idle" | "loading" | "done"
 
 export function ContactSection() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   const [workState, setWorkState] = useState<FormState>("idle")
   const [studyState, setStudyState] = useState<FormState>("idle")
+  
+  // Phone and WhatsApp states
+  const [workPhone, setWorkPhone] = useState<string | undefined>()
+  const [workWhatsapp, setWorkWhatsapp] = useState<string | undefined>()
+  const [studyPhone, setStudyPhone] = useState<string | undefined>()
+  const [studyWhatsapp, setStudyWhatsapp] = useState<string | undefined>()
+
+  // Form field states for "Other" options
+  const [workCountry, setWorkCountry] = useState("")
+  const [workCategory, setWorkCategory] = useState("")
+  const [studyCountry, setStudyCountry] = useState("")
+
+  const supabase = createClient()
+  const router = useRouter()
+  const { user } = useAuth()
+
+  // Test connection on mount
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        const { error } = await supabase.from("countries").select("id").limit(1)
+        if (error) {
+          console.error("Supabase Connection Error:", error.message)
+        } else {
+          console.log("Supabase Connection: OK")
+        }
+      } catch (err) {
+        console.error("Supabase Network Error:", err)
+      }
+    }
+    testConnection()
+  }, [])
 
   const handleSubmit = (
     setter: React.Dispatch<React.SetStateAction<FormState>>,
-  ) => (e: React.FormEvent<HTMLFormElement>) => {
+    type: "work" | "study"
+  ) => async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (!user) {
+      toast.error("Please login to submit your application", {
+        description: "You need an account to track your visa process.",
+        action: {
+          label: "Login Now",
+          onClick: () => router.push("/login")
+        }
+      })
+      return
+    }
+
     setter("loading")
-    setTimeout(() => setter("done"), 700)
+    
+    try {
+      const formData = new FormData(e.currentTarget)
+      const data = Object.fromEntries(formData.entries())
+      
+      console.log("Form submission data:", data)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      const phone = type === "work" ? workPhone : studyPhone
+      const whatsapp = type === "work" ? workWhatsapp : studyWhatsapp
+
+      // Extract 10-digit number without country code
+      const cleanPhone = phone ? phone.replace(/^\+\d+/, '').slice(-10) : null
+      const cleanWhatsapp = whatsapp ? whatsapp.replace(/^\+\d+/, '').slice(-10) : null
+
+      // Logic for "Other" values
+      const finalCountry = (data.country === "Other / Not sure" && data.other_country) 
+        ? data.other_country.toString() 
+        : data.country?.toString()
+
+      const finalCategory = (data.category === "Not sure — please advise" && data.other_category)
+        ? data.other_category.toString()
+        : data.category?.toString()
+
+      const insertData: any = {
+        consultation_type: type === "work" ? "work_visa" : "study_visa",
+        status: "requested",
+        scheduled_at: new Date().toISOString(),
+        phone_number: cleanPhone,
+        whatsapp_number: cleanWhatsapp,
+        preferred_country: finalCountry,
+        visa_category: finalCategory,
+        user_notes: JSON.stringify({
+          ...data,
+          source: "contact_section",
+          submitted_at: new Date().toISOString()
+        }),
+        user_id: session?.user?.id || null,
+      }
+      
+      const { error: dbError } = await supabase
+        .from("consultations")
+        .insert([insertData])
+
+      if (dbError) {
+        console.error("Supabase Database Error:", dbError)
+        throw new Error(dbError.message || "Database connection error")
+      }
+      
+      setter("done")
+      toast.success("Enquiry sent successfully!")
+    } catch (err: any) {
+      console.error("Submission Failure:", err)
+      setter("idle")
+      
+      let errorMsg = "Failed to send enquiry."
+      if (err.message) {
+        errorMsg = err.message
+      } else if (typeof err === 'string') {
+        errorMsg = err
+      }
+      
+      toast.error(`Error: ${errorMsg}. Please ensure you have run the schema.sql in Supabase.`)
+    }
+  }
+
+  if (!mounted) {
+    return (
+      <section id="contact" className="relative scroll-mt-24 py-20 md:py-28">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 h-[600px] flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground font-medium">Loading form...</div>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -183,35 +313,79 @@ export function ContactSection() {
                     />
                   ) : (
                     <form
-                      onSubmit={handleSubmit(setWorkState)}
+                      onSubmit={handleSubmit(setWorkState, "work")}
                       className="grid grid-cols-1 gap-5 md:grid-cols-2"
                     >
                       <Field id="w-name" label="Full name">
                         <Input id="w-name" name="name" required placeholder="Your full name" />
                       </Field>
-                      <Field id="w-phone" label="Phone">
-                        <Input
-                          id="w-phone"
-                          name="phone"
-                          type="tel"
-                          required
-                          placeholder="+91 ..."
-                        />
+                      <Field id="w-email" label="Email">
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="w-email"
+                            name="email"
+                            type="email"
+                            required
+                            placeholder="you@example.com"
+                            className="pl-10"
+                          />
+                        </div>
                       </Field>
-                      <Field id="w-email" label="Email" full>
-                        <Input
-                          id="w-email"
-                          name="email"
-                          type="email"
-                          required
-                          placeholder="you@example.com"
-                        />
+                      <Field id="w-phone" label="Phone Number">
+                        <div className="flex items-center justify-between mb-1">
+                          <Label htmlFor="w-phone" className="text-xs font-medium text-muted-foreground">
+                            {workPhoneCountry ? `Detected: ${workPhoneCountry}` : ""}
+                          </Label>
+                        </div>
+                        <div className="relative phone-input-container">
+                          <Phone className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-blue-500 pointer-events-none" />
+                          <PhoneInput
+                            international
+                            displayInitialValueAsLocalNumber={false}
+                            defaultCountry="IN"
+                            value={workPhone}
+                            onChange={(val) => setWorkPhone(val)}
+                            onCountryChange={(c) => setWorkPhoneCountry(c ? en[c] : "")}
+                            countrySelectComponent={CountrySelectWithCode}
+                            className="flex h-10 w-full rounded-md border border-border/70 bg-background/50 px-3 py-2 text-sm pl-10"
+                          />
+                        </div>
+                      </Field>
+                      <Field id="w-whatsapp" label="WhatsApp Number">
+                        <div className="flex items-center justify-between mb-1">
+                          <Label htmlFor="w-whatsapp" className="text-xs font-medium text-muted-foreground">
+                            {workWhatsappCountry ? `Detected: ${workWhatsappCountry}` : ""}
+                          </Label>
+                        </div>
+                        <div className="relative phone-input-container">
+                          <MessageCircle className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-green-500 pointer-events-none" />
+                          <PhoneInput
+                            international
+                            displayInitialValueAsLocalNumber={false}
+                            defaultCountry="IN"
+                            value={workWhatsapp}
+                            onChange={(val) => setWorkWhatsapp(val)}
+                            onCountryChange={(c) => setWorkWhatsappCountry(c ? en[c] : "")}
+                            countrySelectComponent={CountrySelectWithCode}
+                            className="flex h-10 w-full rounded-md border border-border/70 bg-background/50 px-3 py-2 text-sm pl-10"
+                          />
+                        </div>
                       </Field>
                       <Field id="w-country" label="Preferred country">
-                        <CountrySelect id="w-country" options={WORK_COUNTRIES} />
+                        <CountrySelect id="w-country" options={WORK_COUNTRIES} value={workCountry} onChange={setWorkCountry} />
+                        {workCountry === "Other / Not sure" && (
+                          <div className="mt-3">
+                            <Input 
+                              name="other_country" 
+                              placeholder="Enter country name" 
+                              className="h-10 border-primary/30 focus:border-primary"
+                            />
+                          </div>
+                        )}
                       </Field>
                       <Field id="w-category" label="Visa category">
-                        <Select name="category">
+                        <Select name="category" onValueChange={setWorkCategory}>
                           <SelectTrigger
                             id="w-category"
                             className="border-border/70 bg-background/50"
@@ -226,6 +400,15 @@ export function ContactSection() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {workCategory === "Not sure — please advise" && (
+                          <div className="mt-3">
+                            <Input 
+                              name="other_category" 
+                              placeholder="Describe your requirement" 
+                              className="h-10 border-primary/30 focus:border-primary"
+                            />
+                          </div>
+                        )}
                       </Field>
                       <Field id="w-experience" label="Years of experience">
                         <Input
@@ -260,36 +443,80 @@ export function ContactSection() {
                   {studyState === "done" ? (
                     <SuccessState
                       title="Thank you!"
-                      message="Your study visa enquiry has been received. A counsellor will reach out within one business day."
+                      message="Your study visa enquiry has been received. Our academic advisors will reach out shortly."
                     />
                   ) : (
                     <form
-                      onSubmit={handleSubmit(setStudyState)}
+                      onSubmit={handleSubmit(setStudyState, "study")}
                       className="grid grid-cols-1 gap-5 md:grid-cols-2"
                     >
                       <Field id="s-name" label="Full name">
                         <Input id="s-name" name="name" required placeholder="Your full name" />
                       </Field>
-                      <Field id="s-phone" label="Phone">
-                        <Input
-                          id="s-phone"
-                          name="phone"
-                          type="tel"
-                          required
-                          placeholder="+91 ..."
-                        />
+                      <Field id="s-email" label="Email">
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id="s-email"
+                            name="email"
+                            type="email"
+                            required
+                            placeholder="you@example.com"
+                            className="pl-10"
+                          />
+                        </div>
                       </Field>
-                      <Field id="s-email" label="Email" full>
-                        <Input
-                          id="s-email"
-                          name="email"
-                          type="email"
-                          required
-                          placeholder="you@example.com"
-                        />
+                      <Field id="s-phone" label="Phone Number">
+                        <div className="flex items-center justify-between mb-1">
+                          <Label htmlFor="s-phone" className="text-xs font-medium text-muted-foreground">
+                            {studyPhoneCountry ? `Detected: ${studyPhoneCountry}` : ""}
+                          </Label>
+                        </div>
+                        <div className="relative phone-input-container">
+                          <Phone className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-blue-500 pointer-events-none" />
+                          <PhoneInput
+                            international
+                            displayInitialValueAsLocalNumber={false}
+                            defaultCountry="IN"
+                            value={studyPhone}
+                            onChange={(val) => setStudyPhone(val)}
+                            onCountryChange={(c) => setStudyPhoneCountry(c ? en[c] : "")}
+                            countrySelectComponent={CountrySelectWithCode}
+                            className="flex h-10 w-full rounded-md border border-border/70 bg-background/50 px-3 py-2 text-sm pl-10"
+                          />
+                        </div>
+                      </Field>
+                      <Field id="s-whatsapp" label="WhatsApp Number">
+                        <div className="flex items-center justify-between mb-1">
+                          <Label htmlFor="s-whatsapp" className="text-xs font-medium text-muted-foreground">
+                            {studyWhatsappCountry ? `Detected: ${studyWhatsappCountry}` : ""}
+                          </Label>
+                        </div>
+                        <div className="relative phone-input-container">
+                          <MessageCircle className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-green-500 pointer-events-none" />
+                          <PhoneInput
+                            international
+                            displayInitialValueAsLocalNumber={false}
+                            defaultCountry="IN"
+                            value={studyWhatsapp}
+                            onChange={(val) => setStudyWhatsapp(val)}
+                            onCountryChange={(c) => setStudyWhatsappCountry(c ? en[c] : "")}
+                            countrySelectComponent={CountrySelectWithCode}
+                            className="flex h-10 w-full rounded-md border border-border/70 bg-background/50 px-3 py-2 text-sm pl-10"
+                          />
+                        </div>
                       </Field>
                       <Field id="s-country" label="Preferred country">
-                        <CountrySelect id="s-country" options={STUDY_COUNTRIES} />
+                        <CountrySelect id="s-country" options={STUDY_COUNTRIES} value={studyCountry} onChange={setStudyCountry} />
+                        {studyCountry === "Other / Not sure" && (
+                          <div className="mt-3">
+                            <Input 
+                              name="other_country" 
+                              placeholder="Enter country name" 
+                              className="h-10 border-primary/30 focus:border-primary"
+                            />
+                          </div>
+                        )}
                       </Field>
                       <Field id="s-level" label="Study level">
                         <Select name="level">
@@ -348,6 +575,36 @@ export function ContactSection() {
 
 /* ---------------- helpers ---------------- */
 
+function CountrySelectWithCode({ value, onChange, options, ...rest }: any) {
+  const { iconComponent, ...domProps } = rest;
+  
+  return (
+    <div className="relative flex items-center pr-2 border-r border-border/40 mr-3 h-full min-w-[70px]">
+      <select
+        {...domProps}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="appearance-none bg-transparent pl-2 pr-6 py-1 text-xs font-bold text-primary focus:outline-none cursor-pointer z-20"
+      >
+        <option value="">Code</option>
+        {options.map(({ value, label }: any) => {
+          if (!value) return null;
+          let callingCode = "";
+          try {
+            callingCode = getCountryCallingCode(value);
+          } catch (e) {}
+          return (
+            <option key={value} value={value} className="bg-background text-foreground">
+              {value} {callingCode ? `(+${callingCode})` : ""}
+            </option>
+          );
+        })}
+      </select>
+      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-primary pointer-events-none" />
+    </div>
+  )
+}
+
 function Field({
   id,
   label,
@@ -367,13 +624,41 @@ function Field({
       <div className="mt-2 [&_input]:border-border/70 [&_input]:bg-background/50 [&_textarea]:border-border/70 [&_textarea]:bg-background/50">
         {children}
       </div>
+      <style jsx global>{`
+        .phone-input-container .PhoneInputInput {
+          background: transparent;
+          border: none;
+          outline: none;
+          width: 100%;
+          height: 100%;
+          padding: 0;
+          color: inherit;
+        }
+        .phone-input-container .PhoneInputCountry {
+          margin: 0;
+          display: flex;
+          align-items: center;
+          height: 100%;
+        }
+        .phone-input-container .PhoneInput {
+          display: flex;
+          align-items: center;
+          width: 100%;
+        }
+        /* Style the select dropdown options */
+        .phone-input-container select option {
+          background-color: #0f172a; /* Slate-900 / Dark theme */
+          color: #f8fafc; /* Slate-50 */
+          padding: 8px;
+        }
+      `}</style>
     </div>
   )
 }
 
-function CountrySelect({ id, options }: { id: string; options: string[] }) {
+function CountrySelect({ id, options, value, onChange }: { id: string; options: string[]; value?: string; onChange?: (val: string) => void }) {
   return (
-    <Select name="country">
+    <Select name="country" value={value} onValueChange={onChange}>
       <SelectTrigger id={id} className="border-border/70 bg-background/50">
         <SelectValue placeholder="Select a country" />
       </SelectTrigger>

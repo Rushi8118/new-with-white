@@ -33,10 +33,10 @@ export function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
-                { label: "Countries", href: "/countries" },
                 { label: "Work Visa", href: "/work-visa" },
                 { label: "Study Visa", href: "/study-visa" },
-                { label: "Services", href: "/services" },
+                { label: "All Services", href: "/services" },
+                { label: "Customer Reviews", href: "/reviews" },
                 { label: "About", href: "/about" },
                 { label: "Contact", href: "/contact" },
               ].map((l) => (

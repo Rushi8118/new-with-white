@@ -9,9 +9,9 @@ import { useAuth } from "@/hooks/use-auth"
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
-  { label: "Countries", href: "/countries" },
   { label: "Work Visa", href: "/work-visa" },
   { label: "Study Visa", href: "/study-visa" },
+  { label: "Reviews", href: "/reviews" },
   { label: "Services", href: "/services" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -98,20 +98,14 @@ export function SiteHeader() {
               </Button>
             </div>
           ) : (
-            <>
-              <Link
-                href="/auth/login"
-                className="text-sm font-medium text-foreground/80 hover:text-foreground"
-              >
-                Sign In
-              </Link>
-              <Button
-                asChild
-                className="btn-glow rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Link href="/contact">Free Consultation</Link>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="rounded-full">
+                <Link href="/login">Sign In</Link>
               </Button>
-            </>
+              <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+                <Link href="/register">Register</Link>
+              </Button>
+            </div>
           )}
         </div>
 
@@ -164,12 +158,20 @@ export function SiteHeader() {
                 </button>
               </>
             ) : (
-              <Link
-                href="/auth/login"
-                className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/85 transition hover:bg-primary/10 hover:text-primary"
-              >
-                Sign In / Register
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/85 transition hover:bg-primary/10 hover:text-primary"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/85 transition hover:bg-primary/10 hover:text-primary"
+                >
+                  Register
+                </Link>
+              </>
             )}
             <Button
               asChild
