@@ -4,53 +4,51 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Warm almond / champagne premium palette - NOT white, NOT blue, NOT dark.
-     A soft sandy beige with warm undertone, deep maroon-navy text, terracotta-gold accents. */
-  --background: oklch(0.93 0.022 78);
-  --foreground: oklch(0.24 0.04 35);
+  /* Premium light palette inspired by posters: ivory + navy + gold. */
+  --background: oklch(0.97 0.01 95);
+  --foreground: oklch(0.25 0.05 258);
 
-  --card: oklch(0.97 0.014 82);
-  --card-foreground: oklch(0.24 0.04 35);
+  --card: oklch(0.99 0.004 95);
+  --card-foreground: oklch(0.25 0.05 258);
 
-  --popover: oklch(0.97 0.014 82);
-  --popover-foreground: oklch(0.24 0.04 35);
+  --popover: oklch(0.99 0.004 95);
+  --popover-foreground: oklch(0.25 0.05 258);
 
-  /* Terracotta gold - warmer than amber, complements almond background */
-  --primary: oklch(0.62 0.17 50);
-  --primary-foreground: oklch(0.98 0.008 80);
+  --primary: oklch(0.7 0.16 84);
+  --primary-foreground: oklch(0.22 0.04 258);
 
-  --secondary: oklch(0.9 0.02 75);
-  --secondary-foreground: oklch(0.24 0.04 35);
+  --secondary: oklch(0.96 0.01 92);
+  --secondary-foreground: oklch(0.25 0.05 258);
 
-  --muted: oklch(0.89 0.018 75);
-  --muted-foreground: oklch(0.42 0.03 40);
+  --muted: oklch(0.95 0.008 95);
+  --muted-foreground: oklch(0.47 0.03 258);
 
-  --accent: oklch(0.62 0.17 50);
-  --accent-foreground: oklch(0.98 0.008 80);
+  --accent: oklch(0.7 0.16 84);
+  --accent-foreground: oklch(0.22 0.04 258);
 
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
 
-  --border: oklch(0.84 0.022 70);
-  --input: oklch(0.88 0.02 75);
-  --ring: oklch(0.62 0.17 50);
+  --border: oklch(0.88 0.014 90);
+  --input: oklch(0.95 0.008 95);
+  --ring: oklch(0.7 0.16 84);
 
-  --chart-1: oklch(0.62 0.17 50);
-  --chart-2: oklch(0.55 0.12 145);
-  --chart-3: oklch(0.45 0.08 250);
-  --chart-4: oklch(0.7 0.13 85);
-  --chart-5: oklch(0.4 0.06 30);
+  --chart-1: oklch(0.7 0.16 84);
+  --chart-2: oklch(0.58 0.12 250);
+  --chart-3: oklch(0.55 0.11 188);
+  --chart-4: oklch(0.64 0.14 40);
+  --chart-5: oklch(0.5 0.08 300);
 
   --radius: 0.75rem;
 
-  --sidebar: oklch(0.93 0.022 78);
-  --sidebar-foreground: oklch(0.24 0.04 35);
-  --sidebar-primary: oklch(0.62 0.17 50);
-  --sidebar-primary-foreground: oklch(0.98 0.008 80);
-  --sidebar-accent: oklch(0.9 0.02 75);
-  --sidebar-accent-foreground: oklch(0.24 0.04 35);
-  --sidebar-border: oklch(0.84 0.022 70);
-  --sidebar-ring: oklch(0.62 0.17 50);
+  --sidebar: oklch(0.97 0.01 95);
+  --sidebar-foreground: oklch(0.25 0.05 258);
+  --sidebar-primary: oklch(0.7 0.16 84);
+  --sidebar-primary-foreground: oklch(0.22 0.04 258);
+  --sidebar-accent: oklch(0.95 0.008 95);
+  --sidebar-accent-foreground: oklch(0.25 0.05 258);
+  --sidebar-border: oklch(0.88 0.014 90);
+  --sidebar-ring: oklch(0.7 0.16 84);
 }
 
 /* Dark scope - applied locally to the hero section so the 3D Earth, stars,
@@ -241,6 +239,18 @@
   50%      { opacity: 1;   transform: scale(1.1); }
 }
 
+@keyframes aurora-shift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.03);
+    opacity: 1;
+  }
+}
+
 .earth-ring {
   position: absolute;
   inset: 0;
@@ -361,8 +371,25 @@
 /* Glow border on focus / hover for buttons */
 .btn-glow:hover {
   box-shadow:
-    0 0 0 1px oklch(0.78 0.155 75 / 0.5),
-    0 10px 30px -10px oklch(0.78 0.155 75 / 0.6);
+    0 0 0 1px oklch(0.7 0.16 84 / 0.55),
+    0 10px 30px -10px oklch(0.7 0.16 84 / 0.58);
+}
+
+/* Premium micro-interactions */
+.btn-glow {
+  transition: transform 0.18s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+.btn-glow:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Softer focus ring for inputs/selects */
+:where(input, textarea, select, button):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px oklch(0.78 0.155 75 / 0.25),
+    0 0 0 6px oklch(0.78 0.155 75 / 0.10);
 }
 
 /* Reveal-on-scroll utility (handled with framer-motion mostly, this is a fallback) */
@@ -374,4 +401,62 @@
 .reveal.in-view {
   opacity: 1;
   transform: translateY(0);
+}
+
+.premium-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.premium-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(45% 35% at 12% 8%, oklch(0.7 0.16 84 / 0.12), transparent 72%),
+    radial-gradient(35% 30% at 88% 12%, oklch(0.35 0.07 258 / 0.06), transparent 68%),
+    linear-gradient(to bottom, oklch(0.99 0.005 95), oklch(0.97 0.01 95));
+}
+
+.premium-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, oklch(0.24 0.04 35 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.24 0.04 35 / 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  animation: aurora-shift 9s ease-in-out infinite;
+}
+
+.shimmer-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(120deg, transparent 20%, oklch(0.7 0.16 84 / 0.4), transparent 80%);
+  transform: translateX(-120%);
+  animation: shimmer-pass 5s ease-in-out infinite;
+}
+
+.shimmer-border > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes shimmer-pass {
+  0%,
+  100% {
+    transform: translateX(-120%);
+  }
+  50% {
+    transform: translateX(120%);
+  }
 }

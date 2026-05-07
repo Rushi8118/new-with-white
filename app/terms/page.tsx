@@ -12,7 +12,7 @@ export default function TermsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="min-h-screen bg-background">
+      <main className="premium-page min-h-screen bg-background">
         {/* Header */}
         <section className="border-b border-border/40 px-4 py-16 md:px-6 md:py-24">
           <div className="mx-auto max-w-3xl text-center">

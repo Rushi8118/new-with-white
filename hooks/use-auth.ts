@@ -23,6 +23,9 @@ export function useAuth() {
           .single()
         setProfile(profile)
         setIsAdmin(profile?.user_role === "admin")
+
+        // Fire-and-forget welcome email (idempotent on server)
+        fetch("/api/emails/welcome", { method: "POST" }).catch(() => {})
       }
       setIsLoading(false)
     }
@@ -39,6 +42,7 @@ export function useAuth() {
           .then(({ data }) => {
             setProfile(data)
             setIsAdmin(data?.user_role === "admin")
+            fetch("/api/emails/welcome", { method: "POST" }).catch(() => {})
           })
       } else {
         setProfile(null)

@@ -23,7 +23,7 @@ interface GlobeProps {
 }
 
 // Earth radius constant
-const EARTH_RADIUS = 2
+const EARTH_RADIUS = 2.35
 
 function latLngToVector3(lat: number, lng: number, radius: number) {
   const phi = (90 - lat) * (Math.PI / 180)
@@ -84,10 +84,10 @@ function Earth() {
   // Auto-rotation
   useFrame((state, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.05
+      groupRef.current.rotation.y += delta * 0.08
     }
     if (cloudsRef.current) {
-      cloudsRef.current.rotation.y += delta * 0.07
+      cloudsRef.current.rotation.y += delta * 0.11
     }
   })
 
@@ -101,8 +101,8 @@ function Earth() {
           bumpMap={bumpMap}
           bumpScale={0.05}
           specularMap={specularMap}
-          specular={new THREE.Color("grey")}
-          shininess={5}
+          specular={new THREE.Color("#9aa4b2")}
+          shininess={18}
         />
       </mesh>
 
@@ -249,10 +249,10 @@ function Scene({
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[5, 3, 5]} intensity={2.5} color="#ffffff" castShadow />
-      <directionalLight position={[-5, -3, -5]} intensity={0.5} color="#4455aa" />
-      <pointLight position={[10, 10, 10]} intensity={1.0} color="#ffddaa" />
+      <ambientLight intensity={0.95} />
+      <directionalLight position={[6, 3, 6]} intensity={2.2} color="#ffffff" castShadow />
+      <directionalLight position={[-6, -3, -6]} intensity={0.35} color="#6b8cff" />
+      <pointLight position={[10, 10, 10]} intensity={0.7} color="#ffd9b3" />
       <spotLight
         position={[10, 10, 10]}
         angle={0.15}
@@ -261,8 +261,8 @@ function Scene({
         castShadow
       />
       
-      {/* Stars */}
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0.5} fade speed={1} />
+      {/* Stars (kept subtle so hero background stays unchanged) */}
+      <Stars radius={100} depth={50} count={2200} factor={4} saturation={0} fade speed={0.6} />
       
       {/* Earth */}
       <Earth />
@@ -310,6 +310,8 @@ function GlobeLoader() {
 interface InteractiveGlobeProps {
   className?: string
   onCountryClick?: (country: CountryMarker) => void
+  showMarkers?: boolean
+  showInstructions?: boolean
 }
 
 const DEFAULT_MARKERS: CountryMarker[] = [
@@ -325,7 +327,12 @@ const DEFAULT_MARKERS: CountryMarker[] = [
   { id: "10", name: "UAE", lat: 23.4241, lng: 53.8478, flag: "🇦🇪", slug: "united-arab-emirates" },
 ]
 
-export function InteractiveGlobe({ className = "", onCountryClick }: InteractiveGlobeProps) {
+export function InteractiveGlobe({
+  className = "",
+  onCountryClick,
+  showMarkers = true,
+  showInstructions = true,
+}: InteractiveGlobeProps) {
   const [hoveredCountry, setHoveredCountry] = useState<CountryMarker | null>(null)
   const [selectedCountry, setSelectedCountry] = useState<CountryMarker | null>(null)
 
@@ -341,23 +348,23 @@ export function InteractiveGlobe({ className = "", onCountryClick }: Interactive
     <div className={`relative ${className}`}>
       <Suspense fallback={<GlobeLoader />}>
         <Canvas
-          camera={{ position: [0, 0, 6], fov: 45 }}
+          camera={{ position: [0, 0, 7.2], fov: 42 }}
           style={{ background: "transparent" }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
         >
           <Scene
-            markers={DEFAULT_MARKERS}
-            onCountryClick={handleCountryClick}
-            hoveredCountry={hoveredCountry}
-            setHoveredCountry={setHoveredCountry}
+            markers={showMarkers ? DEFAULT_MARKERS : []}
+            onCountryClick={showMarkers ? handleCountryClick : undefined}
+            hoveredCountry={showMarkers ? hoveredCountry : null}
+            setHoveredCountry={showMarkers ? setHoveredCountry : undefined}
           />
         </Canvas>
       </Suspense>
 
       {/* Info Panel Overlay */}
       <AnimatePresence>
-        {selectedCountry && (
+        {showMarkers && selectedCountry && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -401,9 +408,11 @@ export function InteractiveGlobe({ className = "", onCountryClick }: Interactive
       </AnimatePresence>
 
       {/* Instructions */}
-      <div className="absolute bottom-4 left-4 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-[10px] text-white/60 backdrop-blur-md">
-        🖱️ Drag to rotate · Scroll to zoom · Click markers
-      </div>
+      {showInstructions && (
+        <div className="absolute bottom-4 left-4 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-[10px] text-muted-foreground backdrop-blur-md">
+          Drag to rotate · Scroll to zoom · Click markers
+        </div>
+      )}
     </div>
   )
 }

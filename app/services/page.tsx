@@ -76,7 +76,7 @@ export default function ServicesPage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden premium-page">
         <PageHero
           eyebrow="What we do"
           title="End-to-end services for your overseas journey"

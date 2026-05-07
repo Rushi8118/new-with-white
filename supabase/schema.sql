@@ -13,25 +13,26 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================
 CREATE TABLE countries (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    code            VARCHAR(3) NOT NULL UNIQUE,          -- ISO 3166-1 alpha-3
+    -- Short code used in UI / application ids (e.g. "AUD", "UK")
+    code            VARCHAR(5) NOT NULL UNIQUE,
     name            VARCHAR(100) NOT NULL,
     slug            VARCHAR(100) NOT NULL UNIQUE,
-    capital         VARCHAR(100),
+    -- capital         VARCHAR(100),
     region          VARCHAR(50),
     subregion       VARCHAR(50),
     latitude        NUMERIC(10, 8),
     longitude       NUMERIC(11, 8),
-    currency        VARCHAR(50),
-    currency_code   VARCHAR(3),
-    language        VARCHAR(100),
+    -- currency        VARCHAR(50),
+    -- currency_code   VARCHAR(3),
+    -- language        VARCHAR(100),
     flag_emoji      VARCHAR(10),
     description     TEXT,
-    why_study       TEXT,
-    why_work        TEXT,
-    lifestyle       TEXT,
-    cost_of_living  JSONB DEFAULT '{}',
-    climate         JSONB DEFAULT '{}',
-    images          JSONB DEFAULT '[]',
+    -- why_study       TEXT,
+    -- why_work        TEXT,
+    -- lifestyle       TEXT,
+    -- cost_of_living  JSONB DEFAULT '{}',
+    -- climate         JSONB DEFAULT '{}',
+    -- images          JSONB DEFAULT '[]',
     visa_stats      JSONB DEFAULT '{}',
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     sort_order      INTEGER DEFAULT 0,
@@ -52,7 +53,7 @@ CREATE INDEX idx_countries_slug ON countries(slug);
 CREATE TABLE visa_programs (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     country_id          UUID NOT NULL REFERENCES countries(id) ON DELETE CASCADE,
-    program_type        VARCHAR(50) NOT NULL CHECK (program_type IN ('work','study','tourist','business','investor','skilled_worker','student_work')),
+    program_type        VARCHAR(50) NOT NULL CHECK (program_type IN ('work','study','tourist','skilled_worker')),
     name                VARCHAR(200) NOT NULL,
     slug                VARCHAR(200) NOT NULL,
     description         TEXT NOT NULL,
@@ -61,13 +62,13 @@ CREATE TABLE visa_programs (
     documents_needed    JSONB DEFAULT '[]',
     processing_time     VARCHAR(100),
     visa_duration       VARCHAR(100),
-    cost_inr            NUMERIC(12, 2),
-    cost_local          NUMERIC(12, 2),
-    cost_currency       VARCHAR(3),
+    -- cost_inr            NUMERIC(12, 2),
+    -- cost_local          NUMERIC(12, 2),
+    -- cost_currency       VARCHAR(3),
     success_rate        NUMERIC(5, 2),
-    pathway_to_pr       BOOLEAN DEFAULT FALSE,
-    spousal_rights      BOOLEAN DEFAULT FALSE,
-    work_while_study    BOOLEAN DEFAULT FALSE,
+    -- pathway_to_pr       BOOLEAN DEFAULT FALSE,
+    -- spousal_rights      BOOLEAN DEFAULT FALSE,
+    -- work_while_study    BOOLEAN DEFAULT FALSE,
     post_study_work     VARCHAR(200),
     popular_sectors     JSONB DEFAULT '[]',
     universities        JSONB DEFAULT '[]',
@@ -98,23 +99,26 @@ CREATE TABLE user_profiles (
     full_name           VARCHAR(200),
     first_name          VARCHAR(100),
     last_name           VARCHAR(100),
+    -- Display username (editable). Defaults to "First Last".
+    username            VARCHAR(200),
+    welcome_email_sent_at TIMESTAMPTZ,
     phone               VARCHAR(20),
     whatsapp            VARCHAR(20),
-    date_of_birth       DATE,
+    -- date_of_birth       DATE,
     gender              VARCHAR(20),
     nationality         VARCHAR(100),
     current_city        VARCHAR(100),
     current_country     VARCHAR(100),
-    preferred_countries JSONB DEFAULT '[]',
-    visa_type_interest  JSONB DEFAULT '[]',
+    -- preferred_countries JSONB DEFAULT '[]',
+    -- visa_type_interest  JSONB DEFAULT '[]',
     education_level     VARCHAR(100),
     field_of_study      VARCHAR(200),
-    work_experience_years INTEGER,
-    current_job         VARCHAR(200),
-    english_level       VARCHAR(50),
-    ielts_score         NUMERIC(3, 1),
-    pte_score           NUMERIC(3, 1),
-    toefl_score         NUMERIC(3, 1),
+    -- work_experience_years INTEGER,
+    -- current_job         VARCHAR(200),
+    -- english_level       VARCHAR(50),
+    -- ielts_score         NUMERIC(3, 1),
+    -- pte_score           NUMERIC(3, 1),
+    -- toefl_score         NUMERIC(3, 1),
     profile_photo_url   TEXT,
     onboarding_complete BOOLEAN DEFAULT FALSE,
     user_role           VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (user_role IN ('user','consultant','admin')),
@@ -134,11 +138,13 @@ CREATE INDEX idx_user_profiles_status ON user_profiles(status);
 -- ============================================================
 CREATE TABLE applications (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    -- Human readable id like AUD0805202601 (country code + IST DDMMYYYY + daily counter)
+    application_id      VARCHAR(32) UNIQUE,
     user_id             UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
     visa_program_id     UUID NOT NULL REFERENCES visa_programs(id) ON DELETE RESTRICT,
     country_id          UUID NOT NULL REFERENCES countries(id) ON DELETE RESTRICT,
     application_type    VARCHAR(50) NOT NULL CHECK (application_type IN ('work','study','business','tourist','investor')),
-    status              VARCHAR(50) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','submitted','under_review','documents_pending','interview_scheduled','approved','rejected','withdrawn')),
+    status              VARCHAR(50) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','submitted','under_review','approved','rejected','withdrawn')),
     priority            VARCHAR(20) DEFAULT 'normal' CHECK (priority IN ('low','normal','high','urgent')),
     
     -- Application details
@@ -153,10 +159,10 @@ CREATE TABLE applications (
     decision_at         TIMESTAMPTZ,
     estimated_completion  DATE,
     
-    -- Financial
-    total_fee_inr       NUMERIC(12, 2),
-    amount_paid         NUMERIC(12, 2) DEFAULT 0,
-    payment_status      VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid','partial','paid','refunded')),
+    -- -- Financial
+    -- total_fee_inr       NUMERIC(12, 2),
+    -- amount_paid         NUMERIC(12, 2) DEFAULT 0,
+    -- payment_status      VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid','partial','paid','refunded')),
     
     -- Assignment
     assigned_consultant UUID REFERENCES user_profiles(id),
@@ -168,6 +174,7 @@ CREATE TABLE applications (
 );
 
 CREATE INDEX idx_applications_user ON applications(user_id);
+CREATE INDEX idx_applications_application_id ON applications(application_id);
 CREATE INDEX idx_applications_status ON applications(status);
 CREATE INDEX idx_applications_program ON applications(visa_program_id);
 CREATE INDEX idx_applications_country ON applications(country_id);
@@ -175,35 +182,37 @@ CREATE INDEX idx_applications_assigned ON applications(assigned_consultant);
 
 -- ============================================================
 -- 5. CONSULTATIONS TABLE
--- Free/paid consultation bookings
+-- Contact form + bookings
 -- ============================================================
 CREATE TABLE consultations (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id             UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    user_id             UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
     assigned_consultant UUID REFERENCES user_profiles(id),
-    
-    consultation_type   VARCHAR(50) NOT NULL DEFAULT 'general' CHECK (consultation_type IN ('general','work_visa','study_visa','country_specific','document_review','mock_interview')),
-    status              VARCHAR(30) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('requested','scheduled','confirmed','completed','cancelled','no_show')),
-    
-    scheduled_at        TIMESTAMPTZ NOT NULL,
+
+    consultation_type   VARCHAR(50) NOT NULL DEFAULT 'general'
+        CHECK (consultation_type IN ('general','work_visa','study_visa','country_specific','document_review','mock_interview')),
+    status              VARCHAR(30) NOT NULL DEFAULT 'requested'
+        CHECK (status IN ('requested','scheduled','confirmed','completed','cancelled','no_show')),
+
+    scheduled_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     duration_minutes    INTEGER DEFAULT 30,
     timezone            VARCHAR(50) DEFAULT 'Asia/Kolkata',
-    
-    -- Meeting details
-    meeting_link        TEXT,
-    meeting_platform    VARCHAR(50),
-    
-    -- Topics & notes
-    topics              JSONB DEFAULT '[]',
-    preferred_countries JSONB DEFAULT '[]',
-    user_notes          TEXT,
+
+    -- Contact form fields (used by frontend contact page)
+    phone_number        VARCHAR(20),
+    whatsapp_number     VARCHAR(20),
+    preferred_country   VARCHAR(200),
+    visa_category       VARCHAR(200),
+    user_notes          JSONB DEFAULT '{}'::jsonb,
+
+    -- Internal notes / ops
     consultant_notes    TEXT,
     follow_up_needed    BOOLEAN DEFAULT FALSE,
     follow_up_date      DATE,
-    
+
     rating              INTEGER CHECK (rating >= 1 AND rating <= 5),
     feedback            TEXT,
-    
+
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -212,6 +221,46 @@ CREATE INDEX idx_consultations_user ON consultations(user_id);
 CREATE INDEX idx_consultations_status ON consultations(status);
 CREATE INDEX idx_consultations_date ON consultations(scheduled_at);
 CREATE INDEX idx_consultations_consultant ON consultations(assigned_consultant);
+
+-- -- ============================================================
+-- -- 5. CONSULTATIONS TABLE
+-- -- Free/paid consultation bookings
+-- -- ============================================================
+-- CREATE TABLE consultations (
+--     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     user_id             UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+--     assigned_consultant UUID REFERENCES user_profiles(id),
+    
+--     consultation_type   VARCHAR(50) NOT NULL DEFAULT 'general' CHECK (consultation_type IN ('general','work_visa','study_visa','country_specific','document_review','mock_interview')),
+--     status              VARCHAR(30) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('requested','scheduled','confirmed','completed','cancelled','no_show')),
+    
+--     scheduled_at        TIMESTAMPTZ NOT NULL,
+--     duration_minutes    INTEGER DEFAULT 30,
+--     timezone            VARCHAR(50) DEFAULT 'Asia/Kolkata',
+    
+--     -- Meeting details
+--     meeting_link        TEXT,
+--     meeting_platform    VARCHAR(50),
+    
+--     -- Topics & notes
+--     topics              JSONB DEFAULT '[]',
+--     preferred_countries JSONB DEFAULT '[]',
+--     user_notes          TEXT,
+--     consultant_notes    TEXT,
+--     follow_up_needed    BOOLEAN DEFAULT FALSE,
+--     follow_up_date      DATE,
+    
+--     rating              INTEGER CHECK (rating >= 1 AND rating <= 5),
+--     feedback            TEXT,
+    
+--     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+
+-- CREATE INDEX idx_consultations_user ON consultations(user_id);
+-- CREATE INDEX idx_consultations_status ON consultations(status);
+-- CREATE INDEX idx_consultations_date ON consultations(scheduled_at);
+-- CREATE INDEX idx_consultations_consultant ON consultations(assigned_consultant);
 
 -- ============================================================
 -- 6. SAVED PLACES / FAVORITES TABLE
@@ -290,7 +339,7 @@ CREATE TABLE blog_posts (
     
     -- Media
     featured_image  TEXT,
-    cover_video     TEXT,
+    -- cover_video     TEXT,
     gallery         JSONB DEFAULT '[]',
     
     -- SEO
@@ -374,6 +423,105 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Normalize names and default username to "First Last"
+CREATE OR REPLACE FUNCTION set_user_profile_defaults()
+RETURNS TRIGGER AS $$
+DECLARE
+  cleaned_full_name TEXT;
+  first_part TEXT;
+  last_part TEXT;
+BEGIN
+  cleaned_full_name := NULLIF(BTRIM(COALESCE(NEW.full_name, '')), '');
+
+  -- If full_name provided but first/last not, derive them.
+  IF cleaned_full_name IS NOT NULL AND (NEW.first_name IS NULL OR NEW.last_name IS NULL) THEN
+    first_part := split_part(cleaned_full_name, ' ', 1);
+    last_part := NULLIF(BTRIM(replace(cleaned_full_name, first_part, '')), '');
+
+    IF NEW.first_name IS NULL THEN
+      NEW.first_name := NULLIF(BTRIM(first_part), '');
+    END IF;
+    IF NEW.last_name IS NULL THEN
+      NEW.last_name := last_part;
+    END IF;
+  END IF;
+
+  -- If full_name missing but first/last provided, build it.
+  IF cleaned_full_name IS NULL THEN
+    NEW.full_name := NULLIF(BTRIM(concat_ws(' ', NEW.first_name, NEW.last_name)), '');
+  ELSE
+    NEW.full_name := cleaned_full_name;
+  END IF;
+
+  -- Default username = "First Last" (but keep user-chosen username if provided)
+  IF NEW.username IS NULL OR BTRIM(NEW.username) = '' THEN
+    NEW.username := NULLIF(BTRIM(concat_ws(' ', NEW.first_name, NEW.last_name)), '');
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Application id counter table (per country code + IST date)
+CREATE TABLE IF NOT EXISTS application_counters (
+  country_code VARCHAR(5) NOT NULL,
+  ist_date DATE NOT NULL,
+  counter INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (country_code, ist_date)
+);
+
+-- Generate application_id like AUD0805202601 (IST-based date + daily counter)
+CREATE OR REPLACE FUNCTION generate_application_id(p_country_code VARCHAR)
+RETURNS TEXT AS $$
+DECLARE
+  v_code TEXT;
+  v_ist_date DATE;
+  v_date_str TEXT;
+  v_next INTEGER;
+BEGIN
+  v_code := UPPER(BTRIM(p_country_code));
+  IF v_code IS NULL OR v_code = '' THEN
+    RAISE EXCEPTION 'country code is required';
+  END IF;
+
+  v_ist_date := (timezone('Asia/Kolkata', now()))::date;
+  v_date_str := to_char(v_ist_date, 'DDMMYYYY');
+
+  -- Lock per (code, date) to avoid duplicates under concurrency
+  PERFORM pg_advisory_xact_lock(hashtext(v_code || ':' || v_date_str));
+
+  INSERT INTO application_counters(country_code, ist_date, counter)
+  VALUES (v_code, v_ist_date, 0)
+  ON CONFLICT (country_code, ist_date) DO NOTHING;
+
+  UPDATE application_counters
+  SET counter = counter + 1
+  WHERE country_code = v_code AND ist_date = v_ist_date
+  RETURNING counter INTO v_next;
+
+  RETURN v_code || v_date_str || lpad(v_next::text, 2, '0');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION set_application_id()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_code TEXT;
+BEGIN
+  IF NEW.application_id IS NOT NULL AND BTRIM(NEW.application_id) <> '' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT code INTO v_code FROM countries WHERE id = NEW.country_id;
+  IF v_code IS NULL THEN
+    RAISE EXCEPTION 'Invalid country_id %', NEW.country_id;
+  END IF;
+
+  NEW.application_id := generate_application_id(v_code);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Apply triggers to all tables with updated_at
 CREATE TRIGGER update_countries_updated_at BEFORE UPDATE ON countries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -387,6 +535,12 @@ CREATE TRIGGER update_consultations_updated_at BEFORE UPDATE ON consultations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON blog_posts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER user_profiles_defaults BEFORE INSERT OR UPDATE ON user_profiles
+    FOR EACH ROW EXECUTE FUNCTION set_user_profile_defaults();
+
+CREATE TRIGGER applications_set_application_id BEFORE INSERT ON applications
+    FOR EACH ROW EXECUTE FUNCTION set_application_id();
 
 -- Function to increment view count safely
 CREATE OR REPLACE FUNCTION increment_blog_views(post_id UUID)
@@ -426,6 +580,8 @@ CREATE POLICY "Users can view own consultations" ON consultations
     FOR SELECT USING (auth.uid() = user_id OR auth.uid() = assigned_consultant);
 CREATE POLICY "Users can insert own consultations" ON consultations
     FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own consultations" ON consultations
+    FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = assigned_consultant);
 
 -- saved_places
 CREATE POLICY "Users can manage own saved places" ON saved_places
@@ -454,24 +610,24 @@ CREATE POLICY "Country FAQs are public" ON country_faqs FOR SELECT USING (is_act
 -- VIEWS FOR CONVENIENT QUERYING
 -- ============================================================
 
-CREATE VIEW public_countries AS
+CREATE OR REPLACE VIEW public_countries WITH (security_invoker = true) AS
 SELECT * FROM countries WHERE is_active = true ORDER BY sort_order, name;
 
-CREATE VIEW public_visa_programs AS
+CREATE OR REPLACE VIEW public_visa_programs WITH (security_invoker = true) AS
 SELECT vp.*, c.name as country_name, c.slug as country_slug, c.flag_emoji
 FROM visa_programs vp
 JOIN countries c ON vp.country_id = c.id
 WHERE vp.is_active = true AND c.is_active = true
 ORDER BY c.sort_order, vp.sort_order;
 
-CREATE VIEW featured_programs AS
+CREATE OR REPLACE VIEW featured_programs WITH (security_invoker = true) AS
 SELECT vp.*, c.name as country_name, c.slug as country_slug, c.flag_emoji
 FROM visa_programs vp
 JOIN countries c ON vp.country_id = c.id
 WHERE vp.is_featured = true AND vp.is_active = true AND c.is_active = true
 ORDER BY vp.sort_order;
 
-CREATE VIEW user_dashboard_summary AS
+CREATE OR REPLACE VIEW user_dashboard_summary WITH (security_invoker = true) AS
 SELECT 
     u.id as user_id,
     u.full_name,

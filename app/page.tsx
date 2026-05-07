@@ -14,9 +14,9 @@ export default function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden premium-page">
         <Hero />
-        <WorkVisaSection />
+        <WorkVisaSection compact />
         <StudyVisaSection />
         <ProcessSection />
         <WhyUs />
@@ -24,7 +24,7 @@ export default function HomePage() {
 
         {/* CTA banner linking to dedicated /contact page */}
         <section className="px-4 pb-20 md:px-6 md:pb-28">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 rounded-3xl border border-primary/30 bg-primary/10 p-8 text-center md:flex-row md:p-10 md:text-left">
+          <div className="shimmer-border mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 rounded-3xl border border-primary/30 bg-primary/10 p-8 text-center md:flex-row md:p-10 md:text-left">
             <div className="max-w-xl">
               <h2 className="font-serif text-2xl font-semibold leading-tight text-foreground md:text-3xl">
                 Ready to start your overseas journey?

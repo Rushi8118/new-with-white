@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { getCountries, getCountryCallingCode } from 'react-phone-number-input/input'
 import en from 'react-phone-number-input/locale/en'
+import { useSearchParams } from "next/navigation"
 
 const WORK_COUNTRIES = [
   "Japan",
@@ -75,6 +76,12 @@ export function ContactSection() {
   const [studyPhone, setStudyPhone] = useState<string | undefined>()
   const [studyWhatsapp, setStudyWhatsapp] = useState<string | undefined>()
 
+  // Detected country names shown under inputs
+  const [workPhoneCountry, setWorkPhoneCountry] = useState<string>("")
+  const [workWhatsappCountry, setWorkWhatsappCountry] = useState<string>("")
+  const [studyPhoneCountry, setStudyPhoneCountry] = useState<string>("")
+  const [studyWhatsappCountry, setStudyWhatsappCountry] = useState<string>("")
+
   // Form field states for "Other" options
   const [workCountry, setWorkCountry] = useState("")
   const [workCategory, setWorkCategory] = useState("")
@@ -83,6 +90,22 @@ export function ContactSection() {
   const supabase = createClient()
   const router = useRouter()
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+
+  // Autofill from URL params (e.g. /contact?country=uk&program=skilled-worker)
+  useEffect(() => {
+    const countryParam = searchParams.get("country")
+    const programParam = searchParams.get("program")
+    if (countryParam && !workCountry && !studyCountry) {
+      const pretty = countryParam.replaceAll("-", " ").replace(/\b\w/g, (m) => m.toUpperCase())
+      setWorkCountry(pretty)
+      setStudyCountry(pretty)
+    }
+    if (programParam && !workCategory) {
+      const pretty = programParam.replaceAll("-", " ").replace(/\b\w/g, (m) => m.toUpperCase())
+      setWorkCategory(pretty)
+    }
+  }, [searchParams])
 
   // Test connection on mount
   useEffect(() => {
@@ -152,17 +175,17 @@ export function ContactSection() {
         whatsapp_number: cleanWhatsapp,
         preferred_country: finalCountry,
         visa_category: finalCategory,
-        user_notes: JSON.stringify({
+        user_notes: {
           ...data,
           source: "contact_section",
           submitted_at: new Date().toISOString()
-        }),
+        },
         user_id: session?.user?.id || null,
       }
       
       const { error: dbError } = await supabase
         .from("consultations")
-        .insert([insertData])
+        .insert([insertData] as any)
 
       if (dbError) {
         console.error("Supabase Database Error:", dbError)
@@ -171,6 +194,16 @@ export function ContactSection() {
       
       setter("done")
       toast.success("Enquiry sent successfully!")
+
+      // Send confirmation email (best-effort)
+      fetch("/api/emails/consultation", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          type,
+          preferred_country: finalCountry,
+        }),
+      }).catch(() => {})
     } catch (err: any) {
       console.error("Submission Failure:", err)
       setter("idle")

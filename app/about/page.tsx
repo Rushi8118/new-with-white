@@ -46,7 +46,7 @@ export default function AboutPage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden premium-page">
         <PageHero
           eyebrow="About Siddhivinayak Overseas"
           title="Building global careers, one trusted journey at a time"

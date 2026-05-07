@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
@@ -14,14 +15,16 @@ export default function ContactPage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden premium-page">
         <PageHero
           eyebrow="Get in touch"
           title="Talk to a visa expert today"
           description="Free 30-minute consultation. We'll review your profile, recommend the best country and visa category, and outline timelines and costs."
           breadcrumbs={[{ label: "Home", href: "/" }, { label: "Contact" }]}
         />
-        <ContactSection />
+        <Suspense fallback={null}>
+          <ContactSection />
+        </Suspense>
       </main>
       <SiteFooter />
     </>

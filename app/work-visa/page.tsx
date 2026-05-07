@@ -38,7 +38,7 @@ export default function WorkVisaPage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <main className="relative overflow-hidden premium-page">
         <PageHero
           eyebrow="Work Visa Consultancy"
           title="Work abroad with confidence"

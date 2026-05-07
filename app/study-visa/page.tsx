@@ -56,7 +56,7 @@ export default function StudyVisaPage() {
   return (
     <>
       <SiteHeader />
-      <main className="min-h-screen bg-background pt-24 pb-20">
+      <main className="premium-page min-h-screen bg-background pt-24 pb-20">
         {/* Hero Section */}
         <section className="relative px-4 md:px-6 mb-20 overflow-hidden">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />

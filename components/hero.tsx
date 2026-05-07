@@ -1,12 +1,16 @@
 "use client"
 
-import { lazy, Suspense, useState } from "react"
+import { Suspense } from "react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
-import { ArrowRight, ShieldCheck, Sparkles, Globe2, TrendingUp, Users, Award, ChevronRight } from "lucide-react"
+import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const InteractiveGlobe = lazy(() => import("@/components/interactive-globe"))
+const InteractiveGlobe = dynamic(() => import("@/components/interactive-globe"), {
+  ssr: false,
+  loading: () => <GlobeFallback />,
+})
 
 function GlobeFallback() {
   return (
@@ -20,20 +24,18 @@ function GlobeFallback() {
 }
 
 export function Hero() {
-  const [showGlobe, setShowGlobe] = useState(false)
-
   return (
     <section
       id="home"
       className="relative overflow-hidden bg-background pt-28 pb-8 text-foreground md:pt-36 md:pb-12"
     >
-      {/* Subtle warm cream wash + soft gold glow */}
+      {/* Soft premium wash */}
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 0%, oklch(0.7 0.155 70 / 0.10) 0%, transparent 70%)",
+            "radial-gradient(58% 44% at 50% 0%, oklch(0.7 0.16 84 / 0.16) 0%, transparent 72%)",
         }}
       />
       <div
@@ -41,7 +43,7 @@ export function Hero() {
         className="absolute inset-0 -z-10 opacity-[0.35]"
         style={{
           backgroundImage:
-            "linear-gradient(to right, oklch(0.22 0.045 255 / 0.06) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.22 0.045 255 / 0.06) 1px, transparent 1px)",
+            "linear-gradient(to right, oklch(0.25 0.05 258 / 0.04) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.25 0.05 258 / 0.04) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
@@ -151,36 +153,39 @@ export function Hero() {
             transition={{ duration: 0.9, delay: 0.2 }}
             className="relative mx-auto"
           >
-            {/* Dark space backdrop for the globe */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 -z-10 rounded-3xl"
-              style={{
-                background:
-                  "radial-gradient(circle at 50% 50%, oklch(0.12 0.03 255) 0%, oklch(0.12 0.03 255 / 0.7) 50%, transparent 80%)",
-              }}
-            />
-            
-            {!showGlobe ? (
-              <div className="flex h-[400px] w-full flex-col items-center justify-center md:h-[500px]">
-                <Globe2 className="mb-4 h-16 w-16 text-primary/40" />
-                <Button
-                  onClick={() => setShowGlobe(true)}
-                  className="btn-glow rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Launch 3D Globe
-                </Button>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Interactive Earth with live visa destinations
-                </p>
+            <Suspense fallback={<GlobeFallback />}>
+              <div className="relative h-[400px] w-full md:h-[500px]">
+                <InteractiveGlobe className="h-full w-full" showMarkers={false} showInstructions={false} />
+
+                <div className="pointer-events-none absolute bottom-6 right-4 rounded-2xl border border-white/15 bg-black/45 p-5 text-white shadow-2xl backdrop-blur-xl">
+                  <p className="text-xs text-white/75">Average processing timeline</p>
+                  <p className="mt-1 text-3xl font-semibold tracking-tight">8–12 weeks</p>
+                  <p className="mt-1 text-xs text-emerald-200">Fast-track routes available</p>
+                </div>
               </div>
-            ) : (
-              <Suspense fallback={<GlobeFallback />}>
-                <InteractiveGlobe className="h-[400px] w-full md:h-[500px]" />
-              </Suspense>
-            )}
+            </Suspense>
           </motion.div>
         </div>
+      </div>
+
+      <div className="mx-auto mt-8 grid max-w-7xl grid-cols-1 gap-4 px-4 md:grid-cols-3 md:px-6">
+        {[
+          { title: "Healthcare Jobs", text: "Ireland, UK, Germany pathways with complete documentation support." },
+          { title: "Work Permit Worldwide", text: "Continent-wise opportunities with role-based country matching." },
+          { title: "Study Abroad", text: "Top university admissions with visa filing and interview preparation." },
+        ].map((item) => (
+          <motion.div
+            key={item.title}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.45 }}
+            className="lift-card rounded-2xl border border-border/60 bg-card/80 p-5"
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-primary">{item.title}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.text}</p>
+          </motion.div>
+        ))}
       </div>
     </section>
   )

@@ -43,7 +43,7 @@ export default function ReviewsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="min-h-screen bg-background pt-24 pb-20">
+      <main className="premium-page min-h-screen bg-background pt-24 pb-20">
         <div className="mx-auto max-w-7xl px-4 md:px-6">
           {/* Header */}
           <div className="text-center mb-16">
