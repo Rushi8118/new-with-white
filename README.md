@@ -1,5 +1,21 @@
 # Siddhivinayak Overseas — Production Platform
 
+> **⚠️ IMPORTANT**: See [AUDIT_SUMMARY.md](./AUDIT_SUMMARY.md) and [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for recent fixes and setup instructions.
+
+## Recent Updates (May 6, 2026)
+
+✅ **All Critical Issues Fixed**:
+- Fixed useAuth hook subscription memory leak
+- Removed static export to enable API routes & authentication
+- Created missing pages (forgot-password, terms, privacy)
+- Fixed Link component prop errors
+- Verified database schema and RLS policies
+- All 17 pages now build successfully
+
+**Status**: Ready for deployment once database is configured.
+
+---
+
 ## Overview
 
 Complete production-ready SaaS platform for visa/immigration consultancy with:
@@ -8,7 +24,7 @@ Complete production-ready SaaS platform for visa/immigration consultancy with:
 - Interactive 3D Earth globe with React Three Fiber
 - Premium UI/UX with glassmorphism design
 - Full SEO optimization (metadata, sitemap, JSON-LD)
-- Static export for Hostinger deployment
+- ✅ API routes and middleware enabled (updated May 6)
 
 ---
 

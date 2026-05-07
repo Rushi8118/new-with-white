@@ -29,7 +29,7 @@ export function useAuth() {
 
     getUser()
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
         supabase.from("user_profiles")
@@ -48,7 +48,7 @@ export function useAuth() {
     })
 
     return () => {
-      listener.subscription.unsubscribe()
+      data?.subscription.unsubscribe()
     }
   }, [])
 

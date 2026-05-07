@@ -6,9 +6,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'export',
+  // Remove static export to enable API routes and middleware for authentication
+  // output: 'export', // Disabled - needed for dynamic auth
   trailingSlash: true,
-  distDir: 'dist',
+  // distDir: 'dist',
 }
 
 export default nextConfig
